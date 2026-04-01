@@ -732,6 +732,14 @@ class TestAgentConstructionChain(unittest.TestCase):
             adapter = LLMToolAdapter()
             self.assertIsNotNone(adapter)
 
+    def test_get_model_temperature_overrides_kimi_k25(self):
+        """Kimi K2.5 should force temperature=1 for both bare and prefixed model names."""
+        from src.agent.llm_adapter import get_model_temperature
+
+        self.assertEqual(get_model_temperature("kimi-k2.5", 0.7), 1.0)
+        self.assertEqual(get_model_temperature("openai/kimi-k2.5", 0.7), 1.0)
+        self.assertEqual(get_model_temperature("openai/gpt-4o-mini", 0.7), 0.7)
+
     def test_full_construction_chain(self):
         """Test ToolRegistry + SkillManager + LLMToolAdapter + AgentExecutor wiring."""
         from src.agent.tools.registry import ToolRegistry, ToolDefinition, ToolParameter

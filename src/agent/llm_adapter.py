@@ -100,6 +100,35 @@ def get_thinking_extra_body(model: str) -> Optional[dict]:
     return _get_opt_in_payload(model, _OPT_IN_THINKING_MODELS)
 
 
+def get_model_temperature(model: str, default_temperature: float = 0.7) -> float:
+    """Return model-specific temperature, or use default.
+    
+    Some models have strict temperature constraints:
+    - kimi-k2.5: only supports temperature=1
+    - Other models: use the provided default_temperature
+    
+    Args:
+        model: Model name (e.g., "openai/kimi-k2.5", "kimi-k2.5")
+        default_temperature: Fallback temperature if model has no constraints
+    
+    Returns:
+        float: The appropriate temperature value for the model
+    """
+    if not model:
+        return default_temperature
+    
+    m = model.lower().strip()
+    # Remove provider prefix if present (e.g., "openai/kimi-k2.5" -> "kimi-k2.5")
+    if "/" in m:
+        m = m.split("/", 1)[1]
+    
+    # Kimi K2.5 only supports temperature=1
+    if m == "kimi-k2.5" or m.startswith("kimi-k2.5-"):
+        return 1.0
+    
+    return default_temperature
+
+
 # ============================================================
 # LLM Tool Adapter
 # ============================================================
@@ -304,7 +333,7 @@ class LLMToolAdapter:
         call_kwargs: Dict[str, Any] = {
             "model": model,
             "messages": openai_messages,
-            "temperature": self._get_temperature(model) if temperature is None else temperature,
+            "temperature": get_model_temperature(model, self._get_temperature(model)) if temperature is None else temperature,
         }
         if max_tokens is not None:
             call_kwargs["max_tokens"] = max_tokens

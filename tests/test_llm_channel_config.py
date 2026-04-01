@@ -198,6 +198,23 @@ class LLMChannelConfigTestCase(unittest.TestCase):
 
     @patch("src.config.setup_env")
     @patch.object(Config, "_parse_litellm_yaml", return_value=[])
+    def test_openai_model_accepts_bare_kimi_model_name(self, _mock_parse_yaml, _mock_setup_env) -> None:
+        env = {
+            "OPENAI_API_KEY": "sk-test-value",
+            "OPENAI_BASE_URL": "https://api.moonshot.cn/v1",
+            "OPENAI_MODEL": "kimi-k2.5",
+            "OPENAI_TEMPERATURE": "0.42",
+        }
+
+        with patch.dict(os.environ, env, clear=True):
+            config = Config._load_from_env()
+
+        self.assertEqual(config.openai_model, "kimi-k2.5")
+        self.assertEqual(config.litellm_model, "openai/kimi-k2.5")
+        self.assertAlmostEqual(config.llm_temperature, 0.42)
+
+    @patch("src.config.setup_env")
+    @patch.object(Config, "_parse_litellm_yaml", return_value=[])
     def test_local_openai_compatible_channel_defaults_to_openai_protocol(self, _mock_parse_yaml, _mock_setup_env) -> None:
         """Localhost channels without explicit protocol should default to openai, not ollama."""
         env = {

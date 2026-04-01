@@ -21,7 +21,7 @@ import litellm
 from json_repair import repair_json
 from litellm import Router
 
-from src.agent.llm_adapter import get_thinking_extra_body
+from src.agent.llm_adapter import get_thinking_extra_body, get_model_temperature
 from src.agent.skills.defaults import CORE_TRADING_SKILL_POLICY_ZH
 from src.config import (
     Config,
@@ -1017,8 +1017,9 @@ class GeminiAnalyzer:
             or generation_config.get('max_tokens')
             or 8192
         )
-        temperature = generation_config.get('temperature', 0.7)
-
+        # Get default temperature from config
+        default_temperature = generation_config.get('temperature', 0.7)
+        
         models_to_try = [config.litellm_model] + (config.litellm_fallback_models or [])
         models_to_try = [m for m in models_to_try if m]
 
@@ -1029,6 +1030,10 @@ class GeminiAnalyzer:
         for model in models_to_try:
             try:
                 model_short = model.split("/")[-1] if "/" in model else model
+                # Apply model-specific temperature constraints
+                temperature = get_model_temperature(model, default_temperature)
+                if temperature != default_temperature:
+                    logger.info(f"[LLM配置] 模型 {model} 使用约束 temperature={temperature} (默认: {default_temperature})")
                 call_kwargs: Dict[str, Any] = {
                     "model": model,
                     "messages": [
